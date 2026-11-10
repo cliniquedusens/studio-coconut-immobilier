@@ -182,6 +182,8 @@
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   label{display:block;font-weight:700;font-size:.92rem;margin-bottom:6px;color:var(--noir)}
   input,select,textarea{width:100%;font:inherit;padding:11px 13px;border-radius:8px;border:1.5px solid var(--line-forte);background:#fff;color:var(--texte)}
+  input[type="date"]{min-height:48px;appearance:auto;-webkit-appearance:auto}
+  input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.75;width:20px;height:20px}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--or-vif);outline-offset:1px;border-color:var(--or)}
   textarea{min-height:120px;resize:vertical}
   .full{grid-column:1/-1}
@@ -523,7 +525,8 @@
         </div>
         <div>
           <label for="fDate">Date visée</label>
-          <input id="fDate" type="text" placeholder="Ex. : semaine du 16 novembre" />
+          <input id="fDate" type="date" aria-describedby="fDateHint" />
+          <p id="fDateHint" style="margin:6px 0 0;font-size:.86rem;font-weight:400;color:var(--texte2)">Touchez le champ pour ouvrir le calendrier et choisir votre date.</p>
         </div>
         <div class="full">
           <label for="fNotes">Détails utiles</label>
@@ -675,9 +678,20 @@
   calc();
 
   var fields = ["fName","fType","fCity","fDate","fNotes"];
+  (function(){ var dEl = document.getElementById("fDate"); if(dEl){ var now = new Date(); var pad = function(n){ return (n < 10 ? "0" : "") + n; }; dEl.min = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()); } })();
+  function formatDateFr(iso){
+    if(!iso) return "";
+    var parts = iso.split("-");
+    if(parts.length !== 3) return iso;
+    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    if(isNaN(d.getTime())) return iso;
+    var s = d.toLocaleDateString("fr-CA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
   function buildMsg(){
     var v = {};
     fields.forEach(function(id){ v[id] = document.getElementById(id).value.trim(); });
+    var dateLabel = v.fDate ? formatDateFr(v.fDate) : "(à compléter)";
     var lines = [
       "Bonjour Studio Coconut,",
       "",
@@ -686,7 +700,7 @@
       "Nom : " + (v.fName || "(à compléter)"),
       "Type de propriété : " + v.fType,
       "Ville et secteur : " + (v.fCity || "(à compléter)"),
-      "Date visée : " + (v.fDate || "(à compléter)")
+      "Date visée : " + dateLabel
     ];
     if(v.fNotes) lines.push("Détails : " + v.fNotes);
     lines.push("", "La propriété sera prête pour la séance, selon le guide de préparation.", "", "Merci.");
